@@ -10,7 +10,7 @@ app.use(express.json());
 //
 require("dotenv").config();
 
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 // const uri = "mongodb+srv://bd_boosUser:AejC4UewYztgC0Ts@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority";
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -67,6 +67,17 @@ async function run() {
         .toArray();
       console.log(result, " all data reslt me -");
       res.send(result);
+    });
+
+    // myCart deleted
+    app.delete("/carts/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log(id);
+      const deletedResult = await cartDataCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+      console.log("deletedResult --> ", deletedResult);
+      res.send(deletedResult);
     });
 
     // home

@@ -37,6 +37,9 @@ async function run() {
     const cartDataCollection = client
       .db("bd_hotel_food_delivery")
       .collection("carts");
+    const usersCollection = client
+      .db("bd_hotel_food_delivery")
+      .collection("users");
 
     app.get("/foodMenu", async (req, res) => {
       const menuFoodData = await allFoodMenuDataCollection.find({}).toArray();
@@ -65,19 +68,25 @@ async function run() {
       const result = await cartDataCollection
         .find({ emailUser: email })
         .toArray();
-      console.log(result, " all data reslt me -");
       res.send(result);
     });
 
     // myCart deleted
     app.delete("/carts/:id", async (req, res) => {
       const id = req.params.id;
-      console.log(id);
       const deletedResult = await cartDataCollection.deleteOne({
         _id: new ObjectId(id),
       });
-      console.log("deletedResult --> ", deletedResult);
       res.send(deletedResult);
+    });
+
+    // users releted apis
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      console.log("user body data", user);
+      const result = await usersCollection.insertOne(user)
+      console.log("inserted result -->", result);
+      res.send(result);
     });
 
     // home

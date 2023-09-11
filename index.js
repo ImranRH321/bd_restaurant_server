@@ -9,6 +9,7 @@ app.use(express.json());
 
 //
 require("dotenv").config();
+var jwt = require("jsonwebtoken");
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 // const uri = "mongodb+srv://bd_boosUser:AejC4UewYztgC0Ts@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority";
@@ -83,7 +84,7 @@ async function run() {
     // users related apis
     app.post("/users", async (req, res) => {
       const user = req.body;
-      const existUser = await usersCollection.findOne(query);
+      const existUser = await usersCollection.findOne(user.email);
       if (existUser) {
         return res.send({ message: "user all ready exist" });
       }
@@ -99,7 +100,7 @@ async function run() {
 
     // user role update  related apis //
     app.patch("/users/admin/:email", async (req, res) => {
-      console.log('para -->',req.params.email);
+      console.log("para -->", req.params.email);
       const findUser = await usersCollection.findOne({
         email: req.params.email,
       });
@@ -115,7 +116,6 @@ async function run() {
           $set: { role: "admin" },
         }
       );
-      console.log("updated user role -> ", updateUser);
       res.send(updateUser);
     });
 
@@ -126,6 +126,34 @@ async function run() {
       });
       console.log("deletedUser ->", deletedUser);
       res.send(deletedUser);
+    });
+
+    // Token user client side || why pot jhn kar sr I no //
+    /*     app.get("/token/:email", (req, res) => {
+      console.log("token email -->", req.params.email);
+      const serverTokenUser = jwt.sign(
+        {
+          email: req.params.email,
+        },
+        process.env.ACCESS_SECRET_TOKEN_USER,
+        { expiresIn: "12h" }
+      );
+      res.send({ token: serverTokenUser });
+    }); */
+    // same code get pot difference why...
+
+    app.post("/jwt/token", (req, res) => {
+      const user = req.body;
+      console.log("user body token jwt -->", user);
+      const serverTokenUser = jwt.sign(
+        {
+          user,
+        },
+        process.env.ACCESS_SECRET_TOKEN_USER,
+        { expiresIn: "12h" }
+      );
+      console.log("token me ", serverTokenUser);
+      res.send({ token: serverTokenUser });
     });
 
     // home

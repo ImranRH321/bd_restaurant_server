@@ -80,12 +80,14 @@ async function run() {
       res.send(deletedResult);
     });
 
-    // users releted apis
+    // users related apis
     app.post("/users", async (req, res) => {
       const user = req.body;
-      console.log("user body data", user);
-      const result = await usersCollection.insertOne(user)
-      console.log("inserted result -->", result);
+      const existUser = await usersCollection.findOne(query);
+      if (existUser) {
+        return res.send({ message: "user all ready exist" });
+      }
+      const result = await usersCollection.insertOne(user);
       res.send(result);
     });
 

@@ -91,6 +91,12 @@ async function run() {
       res.send(result);
     });
 
+    //  all user related apis
+    app.get("/users", async (req, res) => {
+      const users = await usersCollection.find({}).toArray();
+      res.send(users);
+    });
+
     // home
     app.get("/", (req, res) => {
       res.send("BOOS is Setting !");

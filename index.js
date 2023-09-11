@@ -97,6 +97,37 @@ async function run() {
       res.send(users);
     });
 
+    // user role update  related apis //
+    app.patch("/users/admin/:email", async (req, res) => {
+      console.log('para -->',req.params.email);
+      const findUser = await usersCollection.findOne({
+        email: req.params.email,
+      });
+      if (!findUser) {
+        return res.send({ message: "user email not found" });
+      }
+      console.log("findUser me-->", findUser);
+      const updateUser = await usersCollection.updateOne(
+        {
+          email: req.params.email,
+        },
+        {
+          $set: { role: "admin" },
+        }
+      );
+      console.log("updated user role -> ", updateUser);
+      res.send(updateUser);
+    });
+
+    //   user deleted related apis
+    app.delete("/users/:id", async (req, res) => {
+      const deletedUser = await usersCollection.deleteOne({
+        _id: new ObjectId(req.params.id),
+      });
+      console.log("deletedUser ->", deletedUser);
+      res.send(deletedUser);
+    });
+
     // home
     app.get("/", (req, res) => {
       res.send("BOOS is Setting !");

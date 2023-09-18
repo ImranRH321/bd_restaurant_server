@@ -12,8 +12,6 @@ require("dotenv").config();
 var jwt = require("jsonwebtoken");
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-// const uri = "mongodb+srv://bd_boosUser:AejC4UewYztgC0Ts@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority";
-// const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority`;
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority`;
 
 
@@ -44,121 +42,37 @@ async function run() {
       .db("bd_hotel_food_delivery")
       .collection("users");
 
+
+    // cart get all itmes 
+    app.get('/carts', async (req, res) => {
+      const queryEmail = req.query.email;
+      console.log('query email now ::: ', queryEmail);
+      const filter = { emailUser: queryEmail }
+      console.log('filter miya ', filter);
+      const result = await cartDataCollection.find(filter).toArray();
+      res.send(result)
+    })
+
+
+
+    // Add cart 
+    app.post('/cart/addItem', async (req, res) => {
+      const clientBody = req.body;
+      console.log(clientBody, 'body data');
+      //  const addDb = await cartDataCollection.insertOne(client)mistik:cient
+      const addDb = await cartDataCollection.insertOne(clientBody)
+      console.log(addDb)
+      res.send(addDb)
+    })
+
+
+    // hotel all Itemt menus list of food menu name and serv
     app.get("/foodMenu", async (req, res) => {
       const menuFoodData = await allFoodMenuDataCollection.find({}).toArray();
-      // console.log(menuFoodData);
       res.send(menuFoodData);
     });
-    app.get("/review", async (req, res) => {
-      const reviewData = await reviewsDataCollection.find({}).toArray();
-      // console.log(reviewData);
-      res.send(reviewData);
-    });
 
-    /* Cart collection */
-    app.post("/carts", async (req, res) => {
-      const item = req.body;
-      console.log("item please", item);
-      const result = await cartDataCollection.insertOne(item);
-      console.log(result);
-      res.send(result);
-    });
-    
-    // no lover 
-    const love = 'no lover not interest grial'
-    // cart get use spacepic user
-    app.get("/carts", async (req, res) => {
-      const email = req.query.email;
-      console.log(email);
-      const result = await cartDataCollection
-        .find({ emailUser: email })
-        .toArray();
-      res.send(result);
-    });
-
-    // myCart deleted
-    app.delete("/carts/:id", async (req, res) => {
-      const id = req.params.id;
-      const deletedResult = await cartDataCollection.deleteOne({
-        _id: new ObjectId(id),
-      });
-      res.send(deletedResult);
-    });
-
-    // users related apis
-    app.post("/users", async (req, res) => {
-      const user = req.body;
-      const existUser = await usersCollection.findOne(user.email);
-      if (existUser) {
-        return res.send({ message: "user all ready exist" });
-      }
-      const result = await usersCollection.insertOne(user);
-      res.send(result);
-    });
-
-    //  all user related apis
-    app.get("/users", async (req, res) => {
-      const users = await usersCollection.find({}).toArray();
-      res.send(users);
-    });
-
-    // user role update  related apis //
-    app.patch("/users/admin/:email", async (req, res) => {
-      console.log("para -->", req.params.email);
-      const findUser = await usersCollection.findOne({
-        email: req.params.email,
-      });
-      if (!findUser) {
-        return res.send({ message: "user email not found" });
-      }
-      console.log("findUser me-->", findUser);
-      const updateUser = await usersCollection.updateOne(
-        {
-          email: req.params.email,
-        },
-        {
-          $set: { role: "admin" },
-        }
-      );
-      res.send(updateUser);
-    });
-
-    //   user deleted related apis
-    app.delete("/users/:id", async (req, res) => {
-      const deletedUser = await usersCollection.deleteOne({
-        _id: new ObjectId(req.params.id),
-      });
-      console.log("deletedUser ->", deletedUser);
-      res.send(deletedUser);
-    });
-
-    // Token user client side || why pot jhn kar sr I no //
-    /*     app.get("/token/:email", (req, res) => {
-      console.log("token email -->", req.params.email);
-      const serverTokenUser = jwt.sign(
-        {
-          email: req.params.email,
-        },
-        process.env.ACCESS_SECRET_TOKEN_USER,
-        { expiresIn: "12h" }
-      );
-      res.send({ token: serverTokenUser });
-    }); */
-    // same code get pot difference why...
-
-    app.post("/jwt/token", (req, res) => {
-      const user = req.body;
-      console.log("user body token jwt -->", user);
-      const serverTokenUser = jwt.sign(
-        {
-          user,
-        },
-        process.env.ACCESS_SECRET_TOKEN_USER,
-        { expiresIn: "12h" }
-      );
-      console.log("token me ", serverTokenUser);
-      res.send({ token: serverTokenUser });
-    });
+    //TODO:  AKANE REIVEWS DATA ASE MONGODB TE   
 
     // home
     app.get("/", (req, res) => {

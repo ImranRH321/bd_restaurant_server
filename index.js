@@ -28,6 +28,10 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
+    const usersCollection = client
+      .db("bd_hotel_food_delivery")
+      .collection("users");
+
     const allFoodMenuDataCollection = client
       .db("bd_hotel_food_delivery")
       .collection("foodItemMenu");
@@ -38,22 +42,33 @@ async function run() {
     const cartDataCollection = client
       .db("bd_hotel_food_delivery")
       .collection("carts");
-    const usersCollection = client
-      .db("bd_hotel_food_delivery")
-      .collection("users");
 
+
+
+    // user updated emali
+    app.post('/users', async (req, res) => {
+      const clintBody = req.body;
+      // console.log(clintBody);
+      const existUserEmail = { emailuser: clintBody.emailuser };
+      // console.log('existUserEmail: ', existUserEmail); 
+      const existUser = await usersCollection.findOne(existUserEmail);
+      console.log('existUser--', existUser);
+
+      if (existUser) {
+        return res.send({ message: 'user already exist' })
+      }
+      const add = await usersCollection.insertOne(clintBody)
+      console.log('add me user', add);
+      res.send(add)
+    })
 
     // cart get all itmes 
     app.get('/carts', async (req, res) => {
       const queryEmail = req.query.email;
-      console.log('query email now ::: ', queryEmail);
       const filter = { emailUser: queryEmail }
-      console.log('filter miya ', filter);
       const result = await cartDataCollection.find(filter).toArray();
       res.send(result)
     })
-
-
 
     // Add cart 
     app.post('/cart/addItem', async (req, res) => {

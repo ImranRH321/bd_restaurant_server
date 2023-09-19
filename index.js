@@ -45,6 +45,7 @@ async function run() {
 
 
 
+
     // user updated emali
     app.post('/users', async (req, res) => {
       const clintBody = req.body;
@@ -62,6 +63,15 @@ async function run() {
       res.send(add)
     })
 
+    // deleted cart itde .em food 
+    app.delete("/carts/:id", async (req, res) => {
+      const id = req.params.id;
+      console.log('para id me: ', id);
+      const deletedItemDb = await cartDataCollection.deleteOne({ _id: new ObjectId(id) })
+      console.log('deletedItemDb me', deletedItemDb);
+      res.send(deletedItemDb)
+    })
+
     // cart get all itmes 
     app.get('/carts', async (req, res) => {
       const queryEmail = req.query.email;
@@ -73,11 +83,21 @@ async function run() {
     // Add cart 
     app.post('/cart/addItem', async (req, res) => {
       const clientBody = req.body;
-      console.log(clientBody, 'body data');
+      // console.log(clientBody, 'body data'); 
+      const query = { foodItemId: clientBody.foodItemId };
+      console.log('check id add food: ', query);
+      const existId = await cartDataCollection.findOne(query);
+      if (existId) {
+        console.log('existId id food: ', existId);
+        const data = {};
+        data.message = 'exist';
+        console.log('custom data: ', data);
+        return res.send(data)
+      }
       //  const addDb = await cartDataCollection.insertOne(client)mistik:cient
       const addDb = await cartDataCollection.insertOne(clientBody)
-      console.log(addDb)
-      res.send(addDb)
+      console.log(addDb, 'add db logic')
+      return res.send(addDb)
     })
 
 

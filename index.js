@@ -43,23 +43,39 @@ async function run() {
       .db("bd_hotel_food_delivery")
       .collection("carts");
 
+    // users/roleSet
+    app.patch("/users/roleSet/:email", async (req, res) => {
+      const email = req.params.email;
+      const user = await usersCollection.findOne({ emailUser: email });
+      if (user.role === 'admin') {
+        return res.send({ message: "this is all ready admin" })
+      }
+      const updatedRole = await usersCollection.updateOne({ emailUser: email }, { $set: { role: 'admin' } });
+      res.send(updatedRole)
+    }); 
 
 
+    // single users deleted  apis
+    app.delete('/users/:id', async (req, res) => {
+      const id = req.params.id;
+      const deletedResult = await usersCollection.deleteOne({ _id: new ObjectId(id) })
+      res.send(deletedResult)
+    })
+    // users releted apis
+    app.get('/users', async (req, res) => {
+      const result = await usersCollection.find({}).toArray();
+      res.send(result)
+    })
 
-    // user updated emali
+    // user updated emali users releted apis
     app.post('/users', async (req, res) => {
       const clintBody = req.body;
-      // console.log(clintBody);
       const existUserEmail = { emailuser: clintBody.emailuser };
-      // console.log('existUserEmail: ', existUserEmail); 
       const existUser = await usersCollection.findOne(existUserEmail);
-      console.log('existUser--', existUser);
-
       if (existUser) {
         return res.send({ message: 'user already exist' })
       }
       const add = await usersCollection.insertOne(clintBody)
-      console.log('add me user', add);
       res.send(add)
     })
 

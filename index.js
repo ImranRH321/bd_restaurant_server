@@ -26,20 +26,18 @@ const client = new MongoClient(uri, {
 
 /* Jwt veryfy middleware  */
 const varifyJwtMiddleWare = (req, res, next) => {
-  const header = req.headers.authorizatoin;
-  if (!header) {
+  const authHeader = req.headers.authorization;
+  console.log('header me : ', authHeader);
+  if (!authHeader) {
     return res.status(401).send({ error: true, message: 'unAuthorization header a br token nai' })
   }
-
-  const token = header.split(' ')[1];
+  const token = authHeader.split(' ')[1];
 
   jwt.verify(token, process.env.ACCESS_SECRET_TOKEN_USER, (err, decoded) => {
     if (err) {
       return res.status(401).send({ error: true, message: 'unAuthorization token bad ba experier' })
     }
     req.decoded = decoded;
-    // console.log('just onely req--->',req);
-    console.log('middleware veryfy funciton now--->', req.decoded = decoded);
     next()
   })
   // 

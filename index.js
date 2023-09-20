@@ -24,6 +24,27 @@ const client = new MongoClient(uri, {
   },
 });
 
+/* Jwt veryfy middleware  */
+const varifyJwtMiddleWare = (req, res, next) => {
+  const header = req.headers.authorizatoin;
+  if (!header) {
+    return res.status(401).send({ error: true, message: 'unAuthorization header a br token nai' })
+  }
+
+  const token = header.split(' ')[1];
+
+  jwt.verify(token, process.env.ACCESS_SECRET_TOKEN_USER, (err, decoded) => {
+    if (err) {
+      return res.status(401).send({ error: true, message: 'unAuthorization token bad ba experier' })
+    }
+    req.decoded = decoded;
+    // console.log('just onely req--->',req);
+    console.log('middleware veryfy funciton now--->', req.decoded = decoded);
+    next()
+  })
+  // 
+}
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
@@ -47,11 +68,8 @@ async function run() {
     // Token send cilent side and playload emial data set
     app.post('/user/tokenSet', async (req, res) => {
       const playloadBody = req.body;
-      console.log('playloadBody-->', playloadBody);
       const token = jwt.sign(playloadBody, process.env.ACCESS_SECRET_TOKEN_USER, { expiresIn: '1h' })
-      console.log('token me', token);
-      console.log('post token apis console ');
-      res.send({token})
+      res.send({ token })
     })
 
     // users/roleSet
@@ -100,8 +118,18 @@ async function run() {
     })
 
     // cart get all itmes 
-    app.get('/carts', async (req, res) => {
+    // app.get('/carts', varifyJwtMiddleWare, async (req, res) => {
+    app.get('/carts', varifyJwtMiddleWare, async (req, res) => {
       const queryEmail = req.query.email;
+      console.log(queryEmail, '---->query email');
+      if (!queryEmail) return 'carts get email is not found';
+
+      const decodedEmail = req.decoded.emailUser;
+      console.log(decodedEmail, '-->decoded Email');
+
+      if (decodedEmail !== queryEmail) {
+        return res.status(403).send({ error: true, message: 'forbidden access not vaid token' })
+      }
       const filter = { emailUser: queryEmail }
       const result = await cartDataCollection.find(filter).toArray();
       res.send(result)

@@ -9,7 +9,7 @@ app.use(express.json());
 
 //
 require("dotenv").config();
-var jwt = require("jsonwebtoken");
+let jwt = require('jsonwebtoken');
 
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.5tob0mc.mongodb.net/?retryWrites=true&w=majority`;
@@ -43,6 +43,17 @@ async function run() {
       .db("bd_hotel_food_delivery")
       .collection("carts");
 
+
+    // Token send cilent side and playload emial data set
+    app.post('/user/tokenSet', async (req, res) => {
+      const playloadBody = req.body;
+      console.log('playloadBody-->', playloadBody);
+      const token = jwt.sign(playloadBody, process.env.ACCESS_SECRET_TOKEN_USER, { expiresIn: '1h' })
+      console.log('token me', token);
+      console.log('post token apis console ');
+      res.send({token})
+    })
+
     // users/roleSet
     app.patch("/users/roleSet/:email", async (req, res) => {
       const email = req.params.email;
@@ -52,7 +63,7 @@ async function run() {
       }
       const updatedRole = await usersCollection.updateOne({ emailUser: email }, { $set: { role: 'admin' } });
       res.send(updatedRole)
-    }); 
+    });
 
 
     // single users deleted  apis

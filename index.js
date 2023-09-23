@@ -27,7 +27,6 @@ const client = new MongoClient(uri, {
 /* Jwt veryfy middleware  */
 const varifyJwtMiddleWare = (req, res, next) => {
   const authHeader = req.headers.authorization;
-  console.log('header me : ', authHeader);
   if (!authHeader) {
     return res.status(401).send({ error: true, message: 'unAuthorization header a br token nai' })
   }
@@ -63,6 +62,40 @@ async function run() {
       .collection("carts");
 
 
+
+    const adminVeryfyMiddleWare = async (req,res,next) => {
+      const email = req.decoded.emailUser;
+      const user = await usersCollection.findOne({ emailUser: email })
+      console.log('admin middleware user ase ----- ', user);
+      if (user.role !== 'admin') {
+        return res.send({ admin: false })
+      }
+      console.log('admin next middlware');
+      next();
+    }
+
+
+
+    // Secoraty Layer  , varifyjwt ,
+    // email same 
+    // check admin 
+
+    // user only allusers route show the problem url just admin show normal user access route qoces then logout and navigate
+  //  user/admin 
+    app.get('/isAdmin/:email', varifyJwtMiddleWare, async (req, res) => {
+      const email = req.params.email;
+      const decodedEmail = email;
+      if (decodedEmail !== email) {
+        return res.status(403).send({ error: true, message: 'forbidden acces' })
+      }
+      const user = await usersCollection.findOne({ emailUser: email });
+      console.log(user, '========== user');
+      const isAdmin = { admin: user?.role === "admin" };
+      console.log(isAdmin, '====== isAdmin');
+      res.send(isAdmin)
+    })
+
+
     // Token send cilent side and playload emial data set
     app.post('/user/tokenSet', async (req, res) => {
       const playloadBody = req.body;
@@ -70,7 +103,7 @@ async function run() {
       res.send({ token })
     })
 
-    // users/roleSet
+    // users/roleSet : updated route apis 
     app.patch("/users/roleSet/:email", async (req, res) => {
       const email = req.params.email;
       const user = await usersCollection.findOne({ emailUser: email });
@@ -89,21 +122,30 @@ async function run() {
       res.send(deletedResult)
     })
     // users releted apis
-    app.get('/users', async (req, res) => {
+    app.get('/users', varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
       const result = await usersCollection.find({}).toArray();
       res.send(result)
     })
 
     // user updated emali users releted apis
     app.post('/users', async (req, res) => {
-      const clintBody = req.body;
-      const existUserEmail = { emailuser: clintBody.emailuser };
-      const existUser = await usersCollection.findOne(existUserEmail);
+      const bodyUser = req.body;
+      console.log(bodyUser);
+      console.log(bodyUser.emailUser);
+
+      const filterEmail = { emailUser: bodyUser.emailUser };
+
+      console.log('filterEamil-->', filterEmail);
+      const existUser = await usersCollection.findOne(filterEmail);
+
+      console.log('existUesr-->', existUser);
+
       if (existUser) {
         return res.send({ message: 'user already exist' })
       }
-      const add = await usersCollection.insertOne(clintBody)
-      res.send(add)
+      const add = await usersCollection.insertOne(bodyUser);
+      console.log('new new added now ---> :', add);
+      return res.send(add)
     })
 
     // deleted cart itde .em food 
@@ -116,20 +158,16 @@ async function run() {
     })
 
     // cart get all itmes 
-    // app.get('/carts', varifyJwtMiddleWare, async (req, res) => {
+    // app.get('/carts', varifyJwtMiddleWare, async (req, res) => { 
+
     app.get('/carts', varifyJwtMiddleWare, async (req, res) => {
-      const queryEmail = req.query.email;
-      console.log(queryEmail, '---->query email');
-      if (!queryEmail) return 'carts get email is not found';
-
-      const decodedEmail = req.decoded.emailUser;
-      console.log(decodedEmail, '-->decoded Email');
-
-      if (decodedEmail !== queryEmail) {
-        return res.status(403).send({ error: true, message: 'forbidden access not vaid token' })
+      const email = req.query.email;
+      const varifyEmail = req.decoded.emailUser;
+      // console.log('cl-->', email, '----> deco em-->', varifyEmail);
+      if (email !== varifyEmail) {
+        return res.send({ eror: true, message: 'two email not match forbidden access' })
       }
-      const filter = { emailUser: queryEmail }
-      const result = await cartDataCollection.find(filter).toArray();
+      const result = await cartDataCollection.find({ emailUser: email }).toArray();
       res.send(result)
     })
 

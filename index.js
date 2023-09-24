@@ -63,16 +63,20 @@ async function run() {
 
 
 
-    const adminVeryfyMiddleWare = async (req,res,next) => {
+
+
+    const adminVeryfyMiddleWare = async (req, res, next) => {
       const email = req.decoded.emailUser;
       const user = await usersCollection.findOne({ emailUser: email })
       console.log('admin middleware user ase ----- ', user);
+
       if (user.role !== 'admin') {
-        return res.send({ admin: false })
+        return res.status(401).send({ error: true, message: 'forbidden message user not bad auth pb' })
       }
       console.log('admin next middlware');
       next();
     }
+
 
 
 
@@ -81,7 +85,7 @@ async function run() {
     // check admin 
 
     // user only allusers route show the problem url just admin show normal user access route qoces then logout and navigate
-  //  user/admin 
+    //  user/admin 
     app.get('/isAdmin/:email', varifyJwtMiddleWare, async (req, res) => {
       const email = req.params.email;
       const decodedEmail = email;
@@ -94,6 +98,8 @@ async function run() {
       console.log(isAdmin, '====== isAdmin');
       res.send(isAdmin)
     })
+
+
 
 
     // Token send cilent side and playload emial data set
@@ -192,11 +198,19 @@ async function run() {
     })
 
 
-    // hotel all Itemt menus list of food menu name and serv
+    //menu releted apis all items menu
     app.get("/foodMenu", async (req, res) => {
       const menuFoodData = await allFoodMenuDataCollection.find({}).toArray();
       res.send(menuFoodData);
     });
+    //  add new item menu releted apis
+    app.post('/menu/addItem', varifyJwtMiddleWare,adminVeryfyMiddleWare, async (req, res) => {
+      const body = req.body;
+      console.log('add body user ======', body);
+      const add = await allFoodMenuDataCollection.insertOne(body);
+      console.log('add me =========', add);
+      res.send(add)
+    })
 
     //TODO:  AKANE REIVEWS DATA ASE MONGODB TE   
 

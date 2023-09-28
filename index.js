@@ -24,6 +24,9 @@ const client = new MongoClient(uri, {
   },
 });
 
+// secreet key  
+const stripe = require("stripe")('sk_test_51LLMJnHSBkwSV8IkVhYkhlobH7By7AQ5upvrqFSXq5JHCLurz961vDSdpOQtp3dYcGFugsWffv6HyJXvaB84eohY00TAxsjWWm');
+
 /* Jwt veryfy middleware  */
 const varifyJwtMiddleWare = (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -60,6 +63,9 @@ async function run() {
     const cartDataCollection = client
       .db("bd_hotel_food_delivery")
       .collection("carts");
+    const paymentCollection = client
+      .db("bd_hotel_food_delivery")
+      .collection("payments");
 
 
 
@@ -100,6 +106,40 @@ async function run() {
     })
 
 
+    // payment first 
+    app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
+      const { totalPrice } = req.body;
+      const amount = totalPrice * 100;
+      console.log(totalPrice);
+
+      console.log(totalPrice, 'taka');
+      // Create a PaymentIntent with the order amount and currency
+      const paymentIntent = await stripe.paymentIntents.create({
+        amount: amount,
+        currency: "usd",
+        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
+        payment_method_types: [
+          "card"
+        ],
+      });
+      // console.log('payment intent vaiya', paymentIntent);
+      res.send({
+        clientSecret: paymentIntent.client_secret,
+      });
+    });
+
+    // payment save information 
+    app.post('/payments', varifyJwtMiddleWare, async (req, res) => {
+      const payment = req.body;
+      console.log(payment);
+      const insertResult = await paymentCollection.insertOne(payment)
+      console.log('res', insertResult);
+      const query = { _id: { $in: payment.cartItemId.map(cartId => new ObjectId(cartId)) } };
+      console.log('qeury me =====', query);
+      const deletedResult = await cartDataCollection.deleteMany(query);
+      console.log(deletedResult);
+      res.send({ insertResult,deletedResult})
+    })
 
 
     // Token send cilent side and playload emial data set
@@ -180,7 +220,7 @@ async function run() {
     // Add cart 
     app.post('/cart/addItem', async (req, res) => {
       const clientBody = req.body;
-      // console.log(clientBody, 'body data'); 
+      console.log(clientBody,'check user');
       const query = { foodItemId: clientBody.foodItemId };
       console.log('check id add food: ', query);
       const existId = await cartDataCollection.findOne(query);
@@ -204,13 +244,25 @@ async function run() {
       res.send(menuFoodData);
     });
     //  add new item menu releted apis
-    app.post('/menu/addItem', varifyJwtMiddleWare,adminVeryfyMiddleWare, async (req, res) => {
+    app.post('/menu/addItem', varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
       const body = req.body;
       console.log('add body user ======', body);
       const add = await allFoodMenuDataCollection.insertOne(body);
       console.log('add me =========', add);
       res.send(add)
     })
+
+    // manage item deleted apis
+    app.delete("/mangeItem/:id", varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
+      const id = req.params.id;
+      console.log('id deleted ======', id);
+
+      const deltedItem = await allFoodMenuDataCollection.deleteOne({ _id: new ObjectId(id) });
+      console.log('========= deltedItem========', deltedItem);
+
+
+      res.send(deltedItem);
+    });
 
     //TODO:  AKANE REIVEWS DATA ASE MONGODB TE   
 

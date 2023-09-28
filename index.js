@@ -107,40 +107,70 @@ async function run() {
 
 
     // payment first 
-    app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
-      const { totalPrice } = req.body;
-      const amount = totalPrice * 100;
-      console.log(totalPrice);
+    /*  app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
+       const { totalPrice } = req.body;
+       const amount = totalPrice * 100;
+         const paymentIntent = await stripe.paymentIntents.create({
+         amount: amount,
+         currency: "usd",
+          payment_method_types: [
+           "card"
+         ],
+       });
+       res.send({
+         clientSecret: paymentIntent.client_secret,
+       });
+     }); */
 
-      console.log(totalPrice, 'taka');
+    // payment save information 
+    /*   app.post('/payments', varifyJwtMiddleWare, async (req, res) => {
+        const payment = req.body;
+        console.log(payment);
+        const insertResult = await paymentCollection.insertOne(payment)
+        console.log('res', insertResult);
+        const query = { _id: { $in: payment.cartItemId.map(cartId => new ObjectId(cartId)) } };
+        console.log('qeury me =====', query);
+        const deletedResult = await cartDataCollection.deleteMany(query);
+        console.log(deletedResult);
+        res.send({ insertResult,deletedResult})
+      }) */
+
+    // payment visa 
+    // Create a PaymentIntent with the order amount and currency
+    app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
+      const { price } = req.body;
+      console.log(req.body, 'body');
+      const amount = price * 100;
+      console.log(price, amount);
+
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
         currency: "usd",
-        // In the latest version of the API, specifying the `automatic_payment_methods` parameter is optional because Stripe enables its functionality by default.
         payment_method_types: [
           "card"
         ],
+
       });
-      // console.log('payment intent vaiya', paymentIntent);
+
       res.send({
         clientSecret: paymentIntent.client_secret,
       });
     });
 
-    // payment save information 
-    app.post('/payments', varifyJwtMiddleWare, async (req, res) => {
+    // ============= payment
+
+    app.post('/payments', async (req, res) => {
       const payment = req.body;
       console.log(payment);
-      const insertResult = await paymentCollection.insertOne(payment)
-      console.log('res', insertResult);
-      const query = { _id: { $in: payment.cartItemId.map(cartId => new ObjectId(cartId)) } };
-      console.log('qeury me =====', query);
-      const deletedResult = await cartDataCollection.deleteMany(query);
-      console.log(deletedResult);
-      res.send({ insertResult,deletedResult})
+      const insertedResult = await paymentCollection.insertOne(payment);
+      console.log(insertedResult);
+      const query = { _id: { $in: payment.cartItemId.map(itemId => new ObjectId(itemId)) } }
+      console.log('query ', query);
+      const deletedItem = await cartDataCollection.deleteMany(query)
+      console.log('deletedItem', deletedItem);
+      res.send({ insertedResult, deletedItem })
     })
-
 
     // Token send cilent side and playload emial data set
     app.post('/user/tokenSet', async (req, res) => {
@@ -220,7 +250,7 @@ async function run() {
     // Add cart 
     app.post('/cart/addItem', async (req, res) => {
       const clientBody = req.body;
-      console.log(clientBody,'check user');
+      console.log(clientBody, 'check user');
       const query = { foodItemId: clientBody.foodItemId };
       console.log('check id add food: ', query);
       const existId = await cartDataCollection.findOne(query);
@@ -246,21 +276,14 @@ async function run() {
     //  add new item menu releted apis
     app.post('/menu/addItem', varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
       const body = req.body;
-      console.log('add body user ======', body);
       const add = await allFoodMenuDataCollection.insertOne(body);
-      console.log('add me =========', add);
       res.send(add)
     })
 
     // manage item deleted apis
     app.delete("/mangeItem/:id", varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
       const id = req.params.id;
-      console.log('id deleted ======', id);
-
       const deltedItem = await allFoodMenuDataCollection.deleteOne({ _id: new ObjectId(id) });
-      console.log('========= deltedItem========', deltedItem);
-
-
       res.send(deltedItem);
     });
 

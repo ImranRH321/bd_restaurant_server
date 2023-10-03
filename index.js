@@ -83,6 +83,12 @@ async function run() {
       next();
     }
 
+    // reiviews apis
+    app.get('/reviews', async (req, res) => {
+      const result = await reviewsDataCollection.find({}).toArray();
+      res.send(result)
+    })
+
 
     app.get('/admin/state', varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
       const users = await usersCollection.estimatedDocumentCount();
@@ -99,193 +105,84 @@ async function run() {
       })
     })
 
-    // total pizza koto gula and koto taka
-
-
-
-    /* ================= danger================= */
-    /**
-       * ---------------
-       * todo: pizza koto gula total pizza price 
-       * BANGLA SYSTEM(second best solution)
-       * ---------------
-       * load all payments
-       * 2. for each payment, get the menuItems array
-       * 3. for each item in the menuItems array get the menuItem from the menu collection
-       * 4. put them in an array: allOrderedItems
-       * 5. separate allOrderedItems by category using filter
-       * 6. now get the quantity by using length: pizzas.length
-       * 7. for each category use reduce to get the total amount spent on this category 1.
-       * 
-      */
-
-    // app.get('/order-state', async (req, res) => {
-    // // Step 1: Load all payments
-    // const payments = await paymentCollection.find({}).toArray();
-    // const menu = await allFoodMenuDataCollection.find({}).toArray();
-
-    // // Step 2, 3, 4: Match, Extract MenuItems, and Put them in an array
-    // const allOrderedItems = payments.flatMap(payment => {
-    //   const orderItems = payment.foodItemId;
-    //   const matchedMenuItems = orderItems.map(orderItemId => {
-    //     const matchingMenu = menu.find(menuItem => menuItem._id.equals(new ObjectId(orderItemId)));
-    //     return matchingMenu;
-    //   });
-    //   return matchedMenuItems;
-    // });
-
-    // // Step 5: Separate allOrderedItems by category using filter
-    // const separatedItemsByCategory = {};
-    // allOrderedItems.forEach(item => {
-    //   if (!separatedItemsByCategory[item.category]) {
-    //     separatedItemsByCategory[item.category] = [];
-    //   }
-    //   separatedItemsByCategory[item.category].push(item);
-    // });
-
-    // // Step 6: Get the quantity using length and calculate total price for each category
-    // const categoryTotals = [];
-    // Object.keys(separatedItemsByCategory).forEach(category => {
-    //   const itemCount = separatedItemsByCategory[category].length;
-    //   const totalPrice = separatedItemsByCategory[category].reduce((total, item) => total + item.price, 0);
-    //   categoryTotals.push({
-    //     category: category,
-    //     count: itemCount,
-    //     totalPrice: totalPrice.toFixed(2)
-    //   });
-    // });
-
-    // // Response with the processed data
-    // res.json(categoryTotals);
-  
-    // })
-
-
-
-
-
-
 
     // --------- 
-    app.get('/order-state', varifyJwtMiddleWare,adminVeryfyMiddleWare, async (req, res) => {
+    app.get('/order-state', varifyJwtMiddleWare, adminVeryfyMiddleWare, async (req, res) => {
       // Step 1: Load all payments
       const payments = await paymentCollection.find({}).toArray();
       const menu = await allFoodMenuDataCollection.find({}).toArray();
-  
+
       // Step 2, 3, 4: Match, Extract MenuItems, and Put them in an array
       const allOrderedItems = payments.flatMap(payment => {
-          const orderItems = payment.foodItemId;
-          const matchedMenuItems = orderItems.map(orderItemId => {
-              const matchingMenu = menu.find(menuItem => menuItem._id.equals(new ObjectId(orderItemId)));
-              return matchingMenu;
-          });
-          return matchedMenuItems;
+        const orderItems = payment.foodItemId;
+        const matchedMenuItems = orderItems.map(orderItemId => {
+          const matchingMenu = menu.find(menuItem => menuItem._id.equals(new ObjectId(orderItemId)));
+          return matchingMenu;
+        });
+        return matchedMenuItems;
       });
-  
+
       // Step 5: Separate allOrderedItems by category using filter
       const separatedItemsByCategory = {};
       allOrderedItems.forEach(item => {
-          if (!separatedItemsByCategory[item.category]) {
-              separatedItemsByCategory[item.category] = [];
-          }
-          separatedItemsByCategory[item.category].push(item);
+        if (!separatedItemsByCategory[item.category]) {
+          separatedItemsByCategory[item.category] = [];
+        }
+        separatedItemsByCategory[item.category].push(item);
       });
-  
+
       // Step 6: Get the quantity using length and calculate total price for each category
       const categoryTotals = [];
       Object.keys(separatedItemsByCategory).forEach(category => {
-          const itemCount = separatedItemsByCategory[category].length;
-          const total = separatedItemsByCategory[category].reduce((total, item) => total + item.price, 0).toFixed(2);
-          categoryTotals.push({
-              count: itemCount,
-              category: category,
-              total: total
-          });
+        const itemCount = separatedItemsByCategory[category].length;
+        const total = separatedItemsByCategory[category].reduce((total, item) => total + item.price, 0).toFixed(2);
+        categoryTotals.push({
+          count: itemCount,
+          category: category,
+          total: total
+        });
       });
-  
+
       // Response with the processed data
       res.json(categoryTotals);
-  });
+    });
 
     // --------- pipline but curss server ---- 
-/*  
-   app.get('/lola', async (req, res) => {
-      const categoryTotals = await paymentCollection.aggregate([
-        {
-            $lookup: {
-                from: "allFoodMenuDataCollection",
-                localField: "foodItemId",
-                foreignField: "_id",
-                as: "menuItems"
+    /*  
+       app.get('/lola', async (req, res) => {
+          const categoryTotals = await paymentCollection.aggregate([
+            {
+                $lookup: {
+                    from: "allFoodMenuDataCollection",
+                    localField: "foodItemId",
+                    foreignField: "_id",
+                    as: "menuItems"
+                }
+            },
+            {
+                $unwind: "$menuItems"
+            },
+            {
+                $group: {
+                    _id: "$menuItems.category",
+                    count: { $sum: 1 },
+                    total: { $sum: "$menuItems.price" }
+                }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    category: "$_id",
+                    count: 1,
+                    total: { $toFixed: ["$total", 2] }
+                }
             }
-        },
-        {
-            $unwind: "$menuItems"
-        },
-        {
-            $group: {
-                _id: "$menuItems.category",
-                count: { $sum: 1 },
-                total: { $sum: "$menuItems.price" }
-            }
-        },
-        {
-            $project: {
-                _id: 0,
-                category: "$_id",
-                count: 1,
-                total: { $toFixed: ["$total", 2] }
-            }
-        }
-    ]).toArray();
-    res.json(categoryTotals);
-  }); */
-  
-/* 
-lookup: jion kora
-unknown: koje ber kora
-group: filter kora alada alada bag kore
-project: seleck kora ei flied gla nemo
-/  
-    // --------- 
+        ]).toArray();
+        res.json(categoryTotals);
+      }); */
 
-    // pipeline code under commonad 
-  /*  
-   app.get('/order-stats', verifyJWT, verifyAdmin, async (req, res) => {
-      const pipeline = [
-        {
-          $lookup: {
-            from: 'menu',
-            localField: 'menuItems',
-            foreignField: '_id',
-            as: 'menuItemsData'
-          }
-        },
-        {
-          $unwind: '$menuItemsData'
-        },
-        {
-          $group: {
-            _id: '$menuItemsData.category',
-            count: { $sum: 1 },
-            total: { $sum: '$menuItemsData.price' }
-          }
-        },
-        {
-          $project: {
-            category: '$_id',
-            count: 1,
-            total: { $round: ['$total', 2] },
-            _id: 0
-          }
-        }
-      ];
-
-      const result = await paymentCollection.aggregate(pipeline).toArray()
-      res.send(result)
-
-    }) 
-    */
+    /* 
+      
     /* ================= danger================= */
 
 
@@ -303,7 +200,6 @@ project: seleck kora ei flied gla nemo
         return res.status(403).send({ error: true, message: 'forbidden acces' })
       }
       const user = await usersCollection.findOne({ emailUser: email });
-      console.log(user, '========== user');
       const isAdmin = { admin: user?.role === "admin" };
       console.log(isAdmin, '====== isAdmin');
       res.send(isAdmin)
@@ -314,8 +210,6 @@ project: seleck kora ei flied gla nemo
     app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
       const { price } = req.body;
       const amount = price * 100;
-      console.log(price, amount);
-
       // Create a PaymentIntent with the order amount and currency
       const paymentIntent = await stripe.paymentIntents.create({
         amount: amount,
@@ -335,13 +229,9 @@ project: seleck kora ei flied gla nemo
 
     app.post('/payments', varifyJwtMiddleWare, async (req, res) => {
       const payment = req.body;
-      console.log(payment);
       const insertedResult = await paymentCollection.insertOne(payment);
-      console.log(insertedResult);
       const query = { _id: { $in: payment.cartItemId.map(itemId => new ObjectId(itemId)) } }
-      console.log('query ', query);
       const deletedItem = await cartDataCollection.deleteMany(query)
-      console.log('deletedItem', deletedItem);
       res.send({ insertedResult, deletedItem })
     })
 
@@ -421,7 +311,7 @@ project: seleck kora ei flied gla nemo
     })
 
     // Add cart 
-    app.post('/cart/addItem', async (req, res) => {
+   /*  app.post('/cart/addItem', async (req, res) => {
       const clientBody = req.body;
       console.log(clientBody, 'check user');
       const query = { foodItemId: clientBody.foodItemId };
@@ -437,6 +327,13 @@ project: seleck kora ei flied gla nemo
       //  const addDb = await cartDataCollection.insertOne(client)mistik:cient
       const addDb = await cartDataCollection.insertOne(clientBody)
       console.log(addDb, 'add db logic')
+      return res.send(addDb)
+    }) */
+
+     app.post('/cart/addItem', async (req, res) => {
+      const clientBody = req.body;
+      const query = { foodItemId: clientBody.foodItemId };
+      const addDb = await cartDataCollection.insertOne(clientBody)
       return res.send(addDb)
     })
 
@@ -458,8 +355,7 @@ project: seleck kora ei flied gla nemo
       const id = req.params.id;
       const deltedItem = await allFoodMenuDataCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(deltedItem);
-    });
-
+    }); 
     //TODO:  AKANE REIVEWS DATA ASE MONGODB TE   
 
     // home
@@ -480,3 +376,25 @@ run().catch(console.dir);
 app.listen(port, () => {
   console.log(`Boos is Sleeping Room https://${port}`);
 });
+
+
+/* ================= danger================= */
+/**
+   * ---------------
+   * todo: pizza koto gula total pizza price 
+   * BANGLA SYSTEM(second best solution)
+   * ---------------
+   * load all payments
+   * 2. for each payment, get the menuItems array
+   * 3. for each item in the menuItems array get the menuItem from the menu collection
+   * 4. put them in an array: allOrderedItems
+   * 5. separate allOrderedItems by category using filter
+   * 6. now get the quantity by using length: pizzas.length
+   * 7. for each category use reduce to get the total amount spent on this category 1.
+   * 
+   * ------------------ 
+   *   lookup: jion kora
+unknown: koje ber kora
+group: filter kora alada alada bag kore
+project: seleck kora ei flied gla nemo
+  */

@@ -25,7 +25,9 @@ const client = new MongoClient(uri, {
 });
 
 // secreet key  
-const stripe = require("stripe")('sk_test_51LLMJnHSBkwSV8IkVhYkhlobH7By7AQ5upvrqFSXq5JHCLurz961vDSdpOQtp3dYcGFugsWffv6HyJXvaB84eohY00TAxsjWWm');
+// const stripe = require("stripe")('sk_test_51LLMJnHSBkwSV8IkVhYkhlobH7By7AQ5upvrqFSXq5JHCLurz961vDSdpOQtp3dYcGFugsWffv6HyJXvaB84eohY00TAxsjWWm');
+// const stripe = require("stripe")(``);
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 
 /* Jwt veryfy middleware  */
 const varifyJwtMiddleWare = (req, res, next) => {
@@ -205,6 +207,19 @@ async function run() {
       res.send(isAdmin)
     })
 
+    // payment history page user
+
+    app.get("/payment/history/:email", async (req, res) => {
+      const email = req.params.email;
+      console.log('email for history pge'.email);
+      const result = await paymentCollection
+        .find({ emailUser: email })
+        .toArray();
+      console.log('history result', result);
+      res.send(result);
+    });
+
+
     // payment visa  first
     // Create a PaymentIntent with the order amount and currency
     app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
@@ -311,26 +326,26 @@ async function run() {
     })
 
     // Add cart 
-   /*  app.post('/cart/addItem', async (req, res) => {
-      const clientBody = req.body;
-      console.log(clientBody, 'check user');
-      const query = { foodItemId: clientBody.foodItemId };
-      console.log('check id add food: ', query);
-      const existId = await cartDataCollection.findOne(query);
-      if (existId) {
-        console.log('existId id food: ', existId);
-        const data = {};
-        data.message = 'exist';
-        console.log('custom data: ', data);
-        return res.send(data)
-      }
-      //  const addDb = await cartDataCollection.insertOne(client)mistik:cient
-      const addDb = await cartDataCollection.insertOne(clientBody)
-      console.log(addDb, 'add db logic')
-      return res.send(addDb)
-    }) */
+    /*  app.post('/cart/addItem', async (req, res) => {
+       const clientBody = req.body;
+       console.log(clientBody, 'check user');
+       const query = { foodItemId: clientBody.foodItemId };
+       console.log('check id add food: ', query);
+       const existId = await cartDataCollection.findOne(query);
+       if (existId) {
+         console.log('existId id food: ', existId);
+         const data = {};
+         data.message = 'exist';
+         console.log('custom data: ', data);
+         return res.send(data)
+       }
+       //  const addDb = await cartDataCollection.insertOne(client)mistik:cient
+       const addDb = await cartDataCollection.insertOne(clientBody)
+       console.log(addDb, 'add db logic')
+       return res.send(addDb)
+     }) */
 
-     app.post('/cart/addItem', async (req, res) => {
+    app.post('/cart/addItem', async (req, res) => {
       const clientBody = req.body;
       const query = { foodItemId: clientBody.foodItemId };
       const addDb = await cartDataCollection.insertOne(clientBody)
@@ -355,7 +370,7 @@ async function run() {
       const id = req.params.id;
       const deltedItem = await allFoodMenuDataCollection.deleteOne({ _id: new ObjectId(id) });
       res.send(deltedItem);
-    }); 
+    });
     //TODO:  AKANE REIVEWS DATA ASE MONGODB TE   
 
     // home

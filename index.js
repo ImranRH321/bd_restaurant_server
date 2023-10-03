@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
 
 // middleware
 app.use(cors());
@@ -24,10 +25,8 @@ const client = new MongoClient(uri, {
   },
 });
 
-// secreet key  
-// const stripe = require("stripe")('sk_test_51LLMJnHSBkwSV8IkVhYkhlobH7By7AQ5upvrqFSXq5JHCLurz961vDSdpOQtp3dYcGFugsWffv6HyJXvaB84eohY00TAxsjWWm');
-// const stripe = require("stripe")(``);
-const stripe = require('stripe')(process.env.PAYMENT_SECRET_KEY)
+
+
 
 /* Jwt veryfy middleware  */
 const varifyJwtMiddleWare = (req, res, next) => {
@@ -193,7 +192,6 @@ async function run() {
     // email same 
     // check admin 
 
-    // user only allusers route show the problem url just admin show normal user access route qoces then logout and navigate
     //  user/admin check
     app.get('/isAdmin/:email', varifyJwtMiddleWare, async (req, res) => {
       const email = req.params.email;
@@ -202,6 +200,7 @@ async function run() {
         return res.status(403).send({ error: true, message: 'forbidden acces' })
       }
       const user = await usersCollection.findOne({ emailUser: email });
+      console.log('===================== user ',user);
       const isAdmin = { admin: user?.role === "admin" };
       console.log(isAdmin, '====== isAdmin');
       res.send(isAdmin)
@@ -220,7 +219,7 @@ async function run() {
     });
 
 
-    // payment visa  first
+    // payment  first
     // Create a PaymentIntent with the order amount and currency
     app.post("/create-payment-intent", varifyJwtMiddleWare, async (req, res) => {
       const { price } = req.body;
@@ -254,6 +253,7 @@ async function run() {
     app.post('/user/tokenSet', async (req, res) => {
       const playloadBody = req.body;
       const token = jwt.sign(playloadBody, process.env.ACCESS_SECRET_TOKEN_USER, { expiresIn: '1h' })
+      console.log('token me', token);
       res.send({ token })
     })
 
@@ -261,6 +261,7 @@ async function run() {
     app.patch("/users/roleSet/:email", async (req, res) => {
       const email = req.params.email;
       const user = await usersCollection.findOne({ emailUser: email });
+      console.log('user role set',user);
       if (user.role === 'admin') {
         return res.send({ message: "this is all ready admin" })
       }
@@ -284,15 +285,15 @@ async function run() {
     // user updated emali users releted apis
     app.post('/users', async (req, res) => {
       const bodyUser = req.body;
-      console.log(bodyUser);
+      // console.log(bodyUser);
       console.log(bodyUser.emailUser);
 
       const filterEmail = { emailUser: bodyUser.emailUser };
 
-      console.log('filterEamil-->', filterEmail);
+      // console.log('filterEamil-->', filterEmail);
       const existUser = await usersCollection.findOne(filterEmail);
 
-      console.log('existUesr-->', existUser);
+      // console.log('existUesr-->', existUser);
 
       if (existUser) {
         return res.send({ message: 'user already exist' })
@@ -375,7 +376,7 @@ async function run() {
 
     // home
     app.get("/", (req, res) => {
-      res.send("BOOS is Setting !");
+      res.send("BD Pannda Express running !");
     });
 
     await client.db("admin").command({ ping: 1 });
